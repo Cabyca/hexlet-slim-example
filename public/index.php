@@ -2,17 +2,26 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Slim\Factory\AppFactory;
 use DI\Container;
+use Slim\Factory\AppFactory;
 
-$users = ['mike', 'mishel', 'adel', 'keks', 'kamila'];
+// Старт PHP сессии
+session_start();
+
+//$users = ['mike', 'mishel', 'adel', 'keks', 'kamila'];
 
 $container = new Container();
 $container->set('renderer', function () {
     // Параметром передается базовая директория, в которой будут храниться шаблоны
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
 });
-$app = AppFactory::createFromContainer($container);
+$container->set('flash', function () {
+    return new \Slim\Flash\Messages();
+});
+
+AppFactory::setContainer($container);
+$app = AppFactory::create();
+
 $app->addErrorMiddleware(true, true, true);
 
 $router = $app->getRouteCollector()->getRouteParser();
@@ -22,21 +31,32 @@ $app->get('/', function ($request, $response) use ($router) {
     return $response;
 })->setName('/');
 
-$app->get('/users', function ($request, $response) use ($users, $router) {
+$app->get('/users', function ($request, $response, $args) use ($router) {
+
+    //$this->get('flash')->addMessage('success', 'This is a message');
+
+    $messages = $this->get('flash')->getMessages();
+
+    //print_r($messages); // => ['success' => ['This is a message']]
+
+    $users = json_decode(file_get_contents('dataFile'), true);
+
     $term = $request->getQueryParam('term');
+
     foreach ($users as $user) {
-        if (strpos($user, $term) !== false) {
-            $resultUsers[] = $user;
+        if (strpos(strtolower($user['nickname']), strtolower($term)) !== false) {
+            $resultUsers[] = $user['nickname'];
         }
     }
-    $params = ['users' => $users, 'resultUsers' => $resultUsers, 'term' => $term];
+
+    $params = ['users' => $users, 'resultUsers' => $resultUsers, 'term' => $term, 'flash' => $messages];
     return $this->get('renderer')->render($response, "users/index.phtml", $params);
 })->setName('users.index');
 
 $app->get('/courses/{id}', function ($request, $response, array $args) use ($router) {
     $id = $args['id'];
     return $response->write("Course id: {$id}");
-})->setName('courses.show');
+})->setName('course.show');
 
 $app->get('/users/new', function ($request, $response) {
     $params = [
@@ -47,6 +67,10 @@ $app->get('/users/new', function ($request, $response) {
 })->setName('users.new');
 
 $app->post('/users', function ($request, $response) use ($router) {
+
+    // Добавление флеш-сообщения. Оно станет доступным на следующий HTTP-запрос.
+    // 'success' — тип флеш-сообщения. Используется при выводе для форматирования.
+    $this->get('flash')->addMessage('success', 'User has been created!');
 
     $user = $request->getParsedBodyParam('user');
 
@@ -59,15 +83,21 @@ $app->post('/users', function ($request, $response) use ($router) {
         file_put_contents('dataFile', json_encode($dataResult));
     }
 
-    return $response->withRedirect('/users', 302);
-})->setName('users.store');
+    return $response->withRedirect($router->urlFor('users.index'), 302);
+})->setName('user.store');
 
 $app->get('/users/{id}', function ($request, $response, $args) use ($router) {
-    $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
-    // Указанный путь считается относительно базовой директории для шаблонов, заданной на этапе конфигурации
-    // $this доступен внутри анонимной функции благодаря https://php.net/manual/ru/closure.bindto.php
-    // $this в Slim это контейнер зависимостей
-    return $this->get('renderer')->render($response, 'users/show.phtml', $params);
-})->setName('users.show');
+
+    $dataResult = json_decode(file_get_contents('dataFile'), true);
+
+    foreach ($dataResult as $value) {
+        if ($value['nickname'] === $args['id']) {
+            print_r("Такой пользователь есть!)))");
+            $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
+            return $this->get('renderer')->render($response, 'users/show.phtml', $params);
+        }
+    }
+    return $response->withStatus(404);
+})->setName('user.show');
 
 $app->run();

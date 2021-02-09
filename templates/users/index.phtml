@@ -1,11 +1,18 @@
-<?php foreach ($users as $user) : ?>
-    <?= htmlspecialchars($user) ?>
+<?php foreach ($users as $key => $user) : ?>
+    <h4>Пользователь № <?= htmlspecialchars($key) ?> : <?= htmlspecialchars($user['nickname']) ?> </h4>
 <?php endforeach ?>
 
 <form action="/users" method="get">
     <input type="search" name="term" value="<?= htmlspecialchars($term) ?>" />
     <input type="submit" value="Search" />
 </form>
+
+<?= htmlspecialchars($flash['success'][0]) ?>
+
+<?php if (empty($resultUsers)) : ?>
+    <h3> Такого пользователя нет! </h3>
+<?php endif; ?>
+
 
 <?php foreach ($resultUsers as $user) : ?>
     <?= htmlspecialchars($user) ?>
