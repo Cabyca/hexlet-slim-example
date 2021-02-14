@@ -4,11 +4,10 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use DI\Container;
 use Slim\Factory\AppFactory;
+use App\Validator;
 
 // Старт PHP сессии
 session_start();
-
-//$users = ['mike', 'mishel', 'adel', 'keks', 'kamila'];
 
 $container = new Container();
 $container->set('renderer', function () {
@@ -68,22 +67,37 @@ $app->get('/users/new', function ($request, $response) {
 
 $app->post('/users', function ($request, $response) use ($router) {
 
-    // Добавление флеш-сообщения. Оно станет доступным на следующий HTTP-запрос.
-    // 'success' — тип флеш-сообщения. Используется при выводе для форматирования.
-    $this->get('flash')->addMessage('success', 'User has been created!');
-
+    $validator = new Validator();
     $user = $request->getParsedBodyParam('user');
+    print_r($user); // проверка параметров запроса
+    $errors = $validator->validate($user);
 
-    if (!file_exists('dataFile')) {
-        $dataJson = json_encode(["1" => $user]);
-        file_put_contents('dataFile', $dataJson);
-    } else {
-        $dataResult = json_decode(file_get_contents('dataFile'), true);
-        $dataResult[count($dataResult) + 1] = $user;
-        file_put_contents('dataFile', json_encode($dataResult));
+    if (count($errors) === 0) {
+
+        if (!file_exists('dataFile')) {
+            $dataJson = json_encode(["1" => $user]);
+            file_put_contents('dataFile', $dataJson);
+        } else {
+            $dataResult = json_decode(file_get_contents('dataFile'), true);
+            $dataResult[count($dataResult) + 1] = $user;
+            file_put_contents('dataFile', json_encode($dataResult));
+        }
+
+        // Добавление флеш-сообщения. Оно станет доступным на следующий HTTP-запрос.
+        // 'success' — тип флеш-сообщения. Используется при выводе для форматирования.
+        $this->get('flash')->addMessage('success', 'User has been created!');
+
+        return $response->withRedirect($router->urlFor('users.index'), 302);
     }
 
-    return $response->withRedirect($router->urlFor('users.index'), 302);
+    $params = [
+        'user' => $user,
+        'errors' => $errors
+    ];
+
+    // Если возникли ошибки, то устанавливаем код ответа в 422 и рендерим форму с указанием ошибок
+    $response = $response->withStatus(422);
+    return $this->get('renderer')->render($response, "users/new.phtml", $params);
 })->setName('user.store');
 
 $app->get('/users/{id}', function ($request, $response, $args) use ($router) {
