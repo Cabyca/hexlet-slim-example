@@ -1,0 +1,44 @@
+<form action="/users/<?= htmlspecialchars($user['id']) ?>" method="post">
+    <input type="hidden" name="_METHOD" value="PATCH">
+    <div>
+        <label>
+            Nickname *
+            <input type="text" name="user[nickname]" value="<?= htmlspecialchars($user['nickname']); ?>">
+        </label>
+
+        <?php if (isset($errors['nickname'])) : ?>
+            <div><?= $errors['nickname'] ?></div>
+        <?php endif ?>
+    </div>
+    <div>
+        <label>
+            Email *
+            <input type="text" name="user[email]" value="<?= htmlspecialchars($user['email']); ?>">
+        </label>
+
+        <?php if (isset($errors['email'])) : ?>
+            <div><?= $errors['email'] ?></div>
+        <?php endif ?>
+    </div>
+    <div>
+        <label>
+            Id *
+            <input type="text" name="user[id]" value="<?= htmlspecialchars($user['id']); ?>">
+        </label>
+
+        <?php if (isset($errors['id'])) : ?>
+            <div><?= $errors['id'] ?></div>
+        <?php endif ?>
+    </div>
+    <input type="submit" value="Update">
+</form>
+
+<?php if (count($flash) > 0) : ?>
+    <ul>
+        <?php foreach ($flash as $messages) : ?>
+            <?php foreach ($messages as $message) : ?>
+                <li><?= $message ?></li>
+            <?php endforeach ?>
+        <?php endforeach ?>
+    </ul>
+<?php endif ?>

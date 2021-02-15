@@ -7,7 +7,15 @@
     <input type="submit" value="Search" />
 </form>
 
-<?= htmlspecialchars($flash['success'][0]) ?>
+<?php if (count($flash) > 0) : ?>
+    <ul>
+        <?php foreach ($flash as $messages) : ?>
+            <?php foreach ($messages as $message) : ?>
+                <li><?= $message ?></li>
+            <?php endforeach ?>
+        <?php endforeach ?>
+    </ul>
+<?php endif ?>
 
 <?php if (empty($resultUsers)) : ?>
     <h3> Такого пользователя нет! </h3>

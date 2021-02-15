@@ -4,6 +4,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use DI\Container;
 use Slim\Factory\AppFactory;
+use Slim\Middleware\MethodOverrideMiddleware;
 use App\Validator;
 
 // Старт PHP сессии
@@ -23,6 +24,8 @@ $app = AppFactory::create();
 
 $app->addErrorMiddleware(true, true, true);
 
+$app->add(MethodOverrideMiddleware::class);
+
 $router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($request, $response) use ($router) {
@@ -39,6 +42,8 @@ $app->get('/users', function ($request, $response, $args) use ($router) {
     //print_r($messages); // => ['success' => ['This is a message']]
 
     $users = json_decode(file_get_contents('dataFile'), true);
+
+    print_r($users);
 
     $term = $request->getQueryParam('term');
 
@@ -113,5 +118,82 @@ $app->get('/users/{id}', function ($request, $response, $args) use ($router) {
     }
     return $response->withStatus(404);
 })->setName('user.show');
+
+$app->get('/users/{id}/edit', function ($request, $response, array $args) {
+
+    $messages = $this->get('flash')->getMessages();
+
+    $id = $args['id'];
+    //$user = $repo->find($id);
+
+    $users = json_decode(file_get_contents('dataFile'), true);
+
+    foreach ($users as $value) {
+        if ($id === $value['id']) {
+            //var_dump($value);
+            $user = $value;
+        }
+        print_r($value);
+    }
+
+    $params = [
+        'user' => $user,
+        'errors' => [],
+        'flash' => $messages
+    ];
+    return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
+})->setName('user.edit');
+
+$app->patch('/users/{id}', function ($request, $response, array $args) use ($router) {
+
+    print_r($id = $args['id']);
+    $users = json_decode(file_get_contents('dataFile'), true);
+
+    foreach ($users as $value) {
+        if ($id === $value['id']) {
+            var_dump($value);
+            $user = $value;
+        }
+        print_r($value);
+    }
+
+    $data = $request->getParsedBodyParam('user');
+
+    $validator = new Validator();
+    $errors = $validator->validate($data);
+
+    if (count($errors) === 0) {
+
+        $users = json_decode(file_get_contents('dataFile'), true);
+
+        // Ручное копирование данных из формы в нашу сущность
+        //$user['nickname'] = $data['nickname'];
+
+        foreach ($users as $key => $value) {
+            if ($id === $value['id']) {
+                $dataResult[$key]['nickname'] = $data['nickname'];
+                $dataResult[$key]['email'] = $data['email'];
+                $dataResult[$key]['id'] = $data['id'];
+            } else {
+                $dataResult[$key] = $value;
+            }
+        }
+
+        $this->get('flash')->addMessage('success', 'User has been updated!');
+
+        file_put_contents('dataFile', json_encode($dataResult));
+
+        $url = $router->urlFor('user.edit', ['id' => $user['id']]);
+        return $response->withRedirect($url);
+    }
+
+    $params = [
+        'user' => $user,
+        'errors' => $errors
+    ];
+
+    $response = $response->withStatus(422);
+    return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
+});
 
 $app->run();
