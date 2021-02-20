@@ -84,7 +84,7 @@ $app->post('/users', function ($request, $response) use ($router) {
             file_put_contents('dataFile', $dataJson);
         } else {
             $dataResult = json_decode(file_get_contents('dataFile'), true);
-            $dataResult[count($dataResult) + 1] = $user;
+            $dataResult[] = $user;
             file_put_contents('dataFile', json_encode($dataResult));
         }
 
@@ -194,6 +194,47 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($rou
 
     $response = $response->withStatus(422);
     return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
+});
+
+$app->get('/users/{id}/delete', function ($request, $response, array $args) use ($router) {
+
+    //$messages = $this->get('flash')->getMessages();
+
+    $deleteId = $args['id'];
+
+    $users = json_decode(file_get_contents('dataFile'), true);
+
+    print_r($users);
+
+    print_r($users[$deleteId]);
+
+    $params = [
+        'deleteId' => $deleteId,
+        //'flash' => $messages
+    ];
+    return $this->get('renderer')->render($response, 'users/delete.phtml', $params);
+})->setName('user.delete');
+
+
+$app->delete('/users/{id}', function ($request, $response, array $args) use ($router) {
+
+    $deleteId = $args['id'];
+
+    $users = json_decode(file_get_contents('dataFile'), true);
+
+    foreach ($users as $key => $user) {
+        if ($deleteId === $user['id']) {
+            $fixKey = $key;
+            break;
+        }
+    }
+
+    unset($users[$fixKey]);
+
+    file_put_contents('dataFile', json_encode($users));
+
+    $this->get('flash')->addMessage('success', 'User has been deleted');
+    return $response->withRedirect($router->urlFor('users.index'));
 });
 
 $app->run();

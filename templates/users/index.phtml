@@ -2,11 +2,6 @@
     <h4>Пользователь № <?= htmlspecialchars($key) ?> : <?= htmlspecialchars($user['nickname']) ?> </h4>
 <?php endforeach ?>
 
-<form action="/users" method="get">
-    <input type="search" name="term" value="<?= htmlspecialchars($term) ?>" />
-    <input type="submit" value="Search" />
-</form>
-
 <?php if (count($flash) > 0) : ?>
     <ul>
         <?php foreach ($flash as $messages) : ?>
@@ -17,8 +12,13 @@
     </ul>
 <?php endif ?>
 
+<form action="/users" method="get">
+    <input type="search" name="term" value="<?= htmlspecialchars($term) ?>" />
+    <input type="submit" value="Search" />
+</form>
+
 <?php if (empty($resultUsers)) : ?>
-    <h3> Такого пользователя нет! </h3>
+    <h3> Такого пользователя нет или поле для поиска пустое! </h3>
 <?php endif; ?>
 
 
