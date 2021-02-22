@@ -35,13 +35,10 @@ $app->get('/', function ($request, $response) use ($router) {
 
 $app->get('/users', function ($request, $response, $args) use ($router) {
 
-    //$this->get('flash')->addMessage('success', 'This is a message');
-
     $messages = $this->get('flash')->getMessages();
 
-    //print_r($messages); // => ['success' => ['This is a message']]
-
-    $users = json_decode(file_get_contents('dataFile'), true);
+    $users = json_decode($request->getCookieParam('user', json_encode([])), true); // file_get_contents('dataFile'), true);
+    //$users = json_decode(file_get_contents('dataFile'), true);
 
     print_r($users);
 
@@ -79,20 +76,41 @@ $app->post('/users', function ($request, $response) use ($router) {
 
     if (count($errors) === 0) {
 
-        if (!file_exists('dataFile')) {
-            $dataJson = json_encode(["1" => $user]);
-            file_put_contents('dataFile', $dataJson);
-        } else {
-            $dataResult = json_decode(file_get_contents('dataFile'), true);
-            $dataResult[] = $user;
-            file_put_contents('dataFile', json_encode($dataResult));
-        }
+        $dataResult = json_decode($request->getCookieParam('user', json_encode([])), true); // file_get_contents('dataFile'), true);
+        $dataResult[] = $user;
+        $encodedUser = json_encode($dataResult);
 
-        // Добавление флеш-сообщения. Оно станет доступным на следующий HTTP-запрос.
-        // 'success' — тип флеш-сообщения. Используется при выводе для форматирования.
         $this->get('flash')->addMessage('success', 'User has been created!');
 
-        return $response->withRedirect($router->urlFor('users.index'), 302);
+        return $response->withHeader('Set-Cookie', "user={$encodedUser}")->withRedirect($router->urlFor('users.index'), 302);
+
+        //[{"nickname":"1","email":"1@1","id":"1"},{"nickname":"2","email":"2@2","id":"2"}]
+        //$app->setCookie('foo', 'bar', '2 days');
+        //---------------------------------------------------------------------------------
+        //$item = $request->getParsedBodyParam('item');
+        // Данные корзины
+        //$cart = json_decode($request->getCookieParam('cart', json_encode([])));
+        // Добавление нового товара
+        //$cart[] = $item;
+        // Кодирование корзины
+        //$encodedCart = json_encode($cart);
+        // Установка новой корзины в куку
+        //return $response->withHeader('Set-Cookie', "cart={$encodedCart}")->withRedirect('/');
+        //-----------------------------------------------------------------------------------
+        //if (!file_exists('dataFile')) {
+        //    $dataJson = json_encode(["1" => $user]);
+        //    file_put_contents('dataFile', $dataJson);
+        //} else {
+        //    $dataResult = json_decode(file_get_contents('dataFile'), true);
+        //    $dataResult[] = $user;
+        //    file_put_contents('dataFile', json_encode($dataResult));
+        //}
+        //-----------------------------------------------------------------------------------
+        // Добавление флеш-сообщения. Оно станет доступным на следующий HTTP-запрос.
+        // 'success' — тип флеш-сообщения. Используется при выводе для форматирования.
+        //$this->get('flash')->addMessage('success', 'User has been created!');
+
+        //return $response->withRedirect($router->urlFor('users.index'), 302);
     }
 
     $params = [
@@ -107,7 +125,8 @@ $app->post('/users', function ($request, $response) use ($router) {
 
 $app->get('/users/{id}', function ($request, $response, $args) use ($router) {
 
-    $dataResult = json_decode(file_get_contents('dataFile'), true);
+    $dataResult = json_decode($request->getCookieParam('user', json_encode([])), true); // file_get_contents('dataFile'), true);
+    //$dataResult = json_decode(file_get_contents('dataFile'), true);
 
     foreach ($dataResult as $value) {
         if ($value['nickname'] === $args['id']) {
@@ -126,7 +145,14 @@ $app->get('/users/{id}/edit', function ($request, $response, array $args) {
     $id = $args['id'];
     //$user = $repo->find($id);
 
-    $users = json_decode(file_get_contents('dataFile'), true);
+    $users = json_decode($request->getCookieParam('user', json_encode([])), true); // file_get_contents('dataFile'), true);
+    //$users = json_decode(file_get_contents('dataFile'), true);
+
+    //    $dataResult = json_decode($request->getCookieParam('user', json_encode([]))); // file_get_contents('dataFile'), true);
+    //    $dataResult[] = $user;
+    //    $encodedUser = json_encode($dataResult);
+    //    $this->get('flash')->addMessage('success', 'User has been created!');
+    //    return $response->withHeader('Set-Cookie', "user={$encodedUser}")->withRedirect($router->urlFor('users.index'), 302);
 
     foreach ($users as $value) {
         if ($id === $value['id']) {
@@ -147,7 +173,15 @@ $app->get('/users/{id}/edit', function ($request, $response, array $args) {
 $app->patch('/users/{id}', function ($request, $response, array $args) use ($router) {
 
     print_r($id = $args['id']);
-    $users = json_decode(file_get_contents('dataFile'), true);
+
+    //    $dataResult = json_decode($request->getCookieParam('user', json_encode([]))); // file_get_contents('dataFile'), true);
+    //    $dataResult[] = $user;
+    //    $encodedUser = json_encode($dataResult);
+    //    $this->get('flash')->addMessage('success', 'User has been created!');
+    //    return $response->withHeader('Set-Cookie', "user={$encodedUser}")->withRedirect($router->urlFor('users.index'), 302);
+
+    $users = json_decode($request->getCookieParam('user', json_encode([])), true); // file_get_contents('dataFile'), true);
+    //$users = json_decode(file_get_contents('dataFile'), true);
 
     foreach ($users as $value) {
         if ($id === $value['id']) {
@@ -164,7 +198,8 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($rou
 
     if (count($errors) === 0) {
 
-        $users = json_decode(file_get_contents('dataFile'), true);
+        $users = json_decode($request->getCookieParam('user', json_encode([])), true); // file_get_contents('dataFile'), true);
+        //$users = json_decode(file_get_contents('dataFile'), true);
 
         // Ручное копирование данных из формы в нашу сущность
         //$user['nickname'] = $data['nickname'];
@@ -181,10 +216,13 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($rou
 
         $this->get('flash')->addMessage('success', 'User has been updated!');
 
-        file_put_contents('dataFile', json_encode($dataResult));
-
+        $encodedUser = json_encode($dataResult);
         $url = $router->urlFor('user.edit', ['id' => $user['id']]);
-        return $response->withRedirect($url);
+        return $response->withHeader('Set-Cookie', "user={$encodedUser};Path=/")->withRedirect($url);
+
+        //file_put_contents('dataFile', json_encode($dataResult));
+        //$url = $router->urlFor('user.edit', ['id' => $user['id']]);
+        //return $response->withRedirect($url);
     }
 
     $params = [
@@ -198,11 +236,10 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($rou
 
 $app->get('/users/{id}/delete', function ($request, $response, array $args) use ($router) {
 
-    //$messages = $this->get('flash')->getMessages();
-
     $deleteId = $args['id'];
 
-    $users = json_decode(file_get_contents('dataFile'), true);
+    $users = json_decode($request->getCookieParam('user', json_encode([])), true); // file_get_contents('dataFile'), true);
+    //$users = json_decode(file_get_contents('dataFile'), true);
 
     print_r($users);
 
@@ -220,7 +257,8 @@ $app->delete('/users/{id}', function ($request, $response, array $args) use ($ro
 
     $deleteId = $args['id'];
 
-    $users = json_decode(file_get_contents('dataFile'), true);
+    $users = json_decode($request->getCookieParam('user', json_encode([])), true); // file_get_contents('dataFile'), true);
+    //$users = json_decode(file_get_contents('dataFile'), true);
 
     foreach ($users as $key => $user) {
         if ($deleteId === $user['id']) {
@@ -231,10 +269,15 @@ $app->delete('/users/{id}', function ($request, $response, array $args) use ($ro
 
     unset($users[$fixKey]);
 
-    file_put_contents('dataFile', json_encode($users));
+    //file_put_contents('dataFile', json_encode($users));
 
     $this->get('flash')->addMessage('success', 'User has been deleted');
-    return $response->withRedirect($router->urlFor('users.index'));
+
+    $encodedUser = json_encode($users);
+    $url = $router->urlFor('user.edit', ['id' => $user['id']]);
+    return $response->withHeader('Set-Cookie', "user={$encodedUser};Path=/")->withRedirect($router->urlFor('users.index'));
+
+    //return $response->withRedirect($router->urlFor('users.index'));
 });
 
 $app->run();
