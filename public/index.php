@@ -29,13 +29,44 @@ $app->add(MethodOverrideMiddleware::class);
 $router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($request, $response) use ($router) {
-    $response->write('Welcome to Slim!');
-    return $response;
+    //Аутентификация
+    $flash = $this->get('flash')->getMessages();
+
+    $loginUser = $_SESSION['user'] ?? null;
+
+    $params = [
+        'loginUser' => $loginUser,
+        'flash' => $flash
+    ];
+    return $this->get('renderer')->render($response, "/users/login.phtml", $params);
 })->setName('/');
+
+$app->post('/session', function ($request, $response) {
+
+    $users = json_decode($request->getCookieParam('user', json_encode([])), true);
+
+    $user = $request->getParsedBodyParam('user');
+
+    foreach ($users as $value) {
+        if ($user['name'] === $value['nickname'] && $user['email'] === $value['email']) {
+            $_SESSION['user'] = $user;
+            return $response->withRedirect('/');
+        }
+    }
+    $this->get('flash')->addMessage('success', 'Wrong password or name');
+    return $response->withRedirect('/');
+});
+
+$app->delete('/session', function ($request, $response) {
+    $_SESSION = [];
+    session_destroy();
+    return $response->withRedirect('/');
+});
 
 $app->get('/users', function ($request, $response, $args) use ($router) {
 
     $messages = $this->get('flash')->getMessages();
+    //$this->get('flash')->addMessage('success', 'User has been created!'); отправка flash
 
     $users = json_decode($request->getCookieParam('user', json_encode([])), true); // file_get_contents('dataFile'), true);
     //$users = json_decode(file_get_contents('dataFile'), true);
@@ -199,10 +230,6 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($rou
     if (count($errors) === 0) {
 
         $users = json_decode($request->getCookieParam('user', json_encode([])), true); // file_get_contents('dataFile'), true);
-        //$users = json_decode(file_get_contents('dataFile'), true);
-
-        // Ручное копирование данных из формы в нашу сущность
-        //$user['nickname'] = $data['nickname'];
 
         foreach ($users as $key => $value) {
             if ($id === $value['id']) {
@@ -216,13 +243,11 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($rou
 
         $this->get('flash')->addMessage('success', 'User has been updated!');
 
+        //Обновление куки
         $encodedUser = json_encode($dataResult);
+
         $url = $router->urlFor('user.edit', ['id' => $user['id']]);
         return $response->withHeader('Set-Cookie', "user={$encodedUser};Path=/")->withRedirect($url);
-
-        //file_put_contents('dataFile', json_encode($dataResult));
-        //$url = $router->urlFor('user.edit', ['id' => $user['id']]);
-        //return $response->withRedirect($url);
     }
 
     $params = [
