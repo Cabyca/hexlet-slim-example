@@ -30,6 +30,7 @@ $router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($request, $response) use ($router) {
     //Аутентификация
+    print_r("Превед медвед работает!)))");
     $flash = $this->get('flash')->getMessages();
 
     $loginUser = $_SESSION['user'] ?? null;
